@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breyta: character editor for Valheim</title>
+<meta name="description" content="Breyta is an unofficial character save editor for Valheim that runs entirely in your browser.">
+<style>
+  :root {
+    --char: #15110d;
+    --wood: #241c15;
+    --grain: #4a3b2b;
+    --ash: #a8957a;
+    --parchment: #ecdfc4;
+    --ember: #eda03a;
+    --blood: #c4492f;
+    --equipped: #243f55;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--char);
+    color: var(--parchment);
+    font: 15px/1.5 var(--sans);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    text-align: center;
+    padding: 64px 24px 40px;
+    max-width: 640px;
+  }
+  h1 {
+    margin: 0;
+    font: 400 44px/1.1 var(--serif);
+    letter-spacing: 0.01em;
+  }
+  h1 small {
+    display: block;
+    margin-top: 8px;
+    font-size: 19px;
+    color: var(--ash);
+    font-style: italic;
+  }
+  .lede { margin: 20px 0 28px; color: var(--ash); }
+  h2 {
+    margin: 0 0 20px;
+    font: 400 22px/1.2 var(--serif);
+    text-align: center;
+  }
+  .actions { display: flex; gap: 12px; justify-content: center; }
+  button, .button {
+    border: 1px solid var(--ember);
+    border-radius: 4px;
+    background: none;
+    color: var(--ember);
+    padding: 10px 24px;
+    min-width: 148px;
+    font: 500 15px/1.2 var(--sans);
+    cursor: pointer;
+  }
+  .primary { background: var(--ember); color: var(--char); }
+  .danger { border-color: var(--blood); color: var(--blood); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  :focus-visible, .button:focus-within { outline: 2px solid var(--ember); outline-offset: 2px; }
+  #status { margin: 20px 0 0; color: var(--ash); min-height: 1.5em; }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 0 24px 48px;
+    width: min(920px, 100%);
+  }
+  main[hidden] { display: none; }
+  section {
+    background: var(--wood);
+    border: 1px solid var(--grain);
+    border-radius: 8px;
+    padding: 28px;
+  }
+  .wide { grid-column: 1 / -1; }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  label { color: var(--ash); }
+  input, select {
+    width: 100%;
+    background: var(--char);
+    color: var(--parchment);
+    border: 1px solid var(--grain);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font: 15px/1.2 var(--sans);
+  }
+  input::placeholder { color: var(--ash); opacity: 0.6; }
+  input:disabled { opacity: 0.4; }
+  input[type=color] { padding: 3px; height: 36px; cursor: pointer; }
+  input[type=number] { text-align: right; font-variant-numeric: tabular-nums; }
+  .center { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+  .food { display: grid; grid-template-columns: 1fr 96px; gap: 12px; margin-bottom: 12px; }
+  .food-head { color: var(--ash); font-size: 13px; margin-bottom: 6px; }
+  .food-head span:last-child { text-align: right; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+  }
+  .cell {
+    position: relative;
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 8px 6px;
+    border: 1px solid var(--grain);
+    border-radius: 4px;
+    background: var(--char);
+    color: var(--parchment);
+    font: 12px/1.25 var(--sans);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+  .cell:nth-child(-n + 8) { margin-bottom: 12px; }
+  .cell.equipped { background: var(--equipped); }
+  .cell.selected { border-color: var(--ember); box-shadow: 0 0 0 1px var(--ember); }
+  .cell .key { position: absolute; left: 6px; top: 3px; color: var(--ash); font-size: 11px; }
+  .cell .stack {
+    position: absolute;
+    right: 6px;
+    bottom: 3px;
+    color: var(--ember);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .item-editor {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .item-editor label { display: block; font-size: 13px; margin-bottom: 6px; }
+  .skills { display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; }
+  .skills .row { grid-template-columns: 1fr 88px; }
+  footer {
+    max-width: 60ch;
+    padding: 8px 24px 56px;
+    text-align: center;
+    color: var(--ash);
+    font-size: 13px;
+  }
+  footer p { margin: 0 0 8px; }
+  footer a { color: inherit; }
+  @media (max-width: 720px) {
+    header { padding-top: 40px; }
+    h1 { font-size: 34px; }
+    main { grid-template-columns: 1fr; padding: 0 12px 40px; }
+    section { padding: 20px 16px; }
+    .grid { gap: 4px; }
+    .cell { font-size: 10px; padding: 6px 2px; }
+    .item-editor { grid-template-columns: 1fr 1fr 1fr; }
+    .item-editor > :first-child { grid-column: 1 / -1; }
+    .skills { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Breyta<small>Character editor for Valheim</small></h1>
+  <p class="lede">Change your viking’s looks, skills, food and inventory. Your save is read and written in this browser and never uploaded.</p>
+  <div class="actions">
+    <label class="button">Open save<input id="open" type="file" accept=".fch" hidden></label>
+    <button id="save" class="primary" disabled>Save changes</button>
+  </div>
+  <p id="status" role="status">Choose a .fch file from your Valheim characters folder. Keep a copy of the original.</p>
+</header>
+
+<main id="editor" hidden>
+  <section>
+    <h2>Character</h2>
+    <div class="row"><label for="name">Name</label><input id="name"></div>
+    <div class="row"><label for="model">Body</label>
+      <select id="model"><option value="0">Male</option><option value="1">Female</option></select></div>
+    <div class="row"><label for="beard">Beard</label><select id="beard"></select></div>
+    <div class="row"><label for="hair">Hair</label><select id="hair"></select></div>
+    <div class="row"><label for="skin">Skin colour</label><input id="skin" type="color"></div>
+    <div class="row"><label for="hairColor">Hair colour</label><input id="hairColor" type="color"></div>
+  </section>
+
+  <section>
+    <h2>Food</h2>
+    <div class="food food-head"><span>Eaten</span><span>Minutes left</span></div>
+    <div id="foods"></div>
+  </section>
+
+  <section class="wide">
+    <h2>Inventory</h2>
+    <div id="grid" class="grid"></div>
+    <div class="item-editor">
+      <div><label for="itemName">Item</label><input id="itemName" list="itemList" placeholder="Empty slot, type to add an item"></div>
+      <div><label for="itemStack">Stack</label><input id="itemStack" type="number" min="1" max="65535"></div>
+      <div><label for="itemQuality">Quality</label><input id="itemQuality" type="number" min="1" max="65535"></div>
+      <div><label for="itemDurability">Durability</label><input id="itemDurability" type="number" min="0" step="any"></div>
+    </div>
+    <div class="center"><button id="itemRemove" class="danger">Remove item</button></div>
+  </section>
+
+  <section class="wide">
+    <h2>Skills</h2>
+    <div id="skills" class="skills"></div>
+    <div class="center"><button id="minAll">Set all to 0</button><button id="maxAll">Set all to 100</button></div>
+  </section>
+</main>
+
+<footer>
+  <p>Unofficial fan-made tool. Not affiliated with or endorsed by Iron Gate AB or Coffee Stain Publishing. Valheim is a trademark of Iron Gate AB.</p>
+  <p>Edited saves are used at your own risk. Item names come from the <a href="https://valheim-modding.github.io/Jotunn/data/objects/item-list.html">Jotunn item list</a> (MIT).</p>
+</footer>
+
+<datalist id="itemList"></datalist>
+<datalist id="foodList"></datalist>
+
+<script src="items.js"></script>
+<script>
+const PROFILE_VERSION = 46;
+const PLAYER_VERSION = 33;
+const INVENTORY_VERSION = 109;
+const SKILLS_VERSION = 2;
+const GRID_WIDTH = 8;
+const FOOD_SLOTS = 3;
+
+const SKILLS = {
+  1: "Swords", 2: "Knives", 3: "Clubs", 4: "Polearms", 5: "Spears", 6: "Blocking",
+  7: "Axes", 8: "Bows", 9: "Elemental Magic", 10: "Blood Magic", 11: "Unarmed",
+  12: "Pickaxes", 13: "Wood Cutting", 14: "Crossbows", 100: "Jump", 101: "Sneak",
+  102: "Run", 103: "Swim", 104: "Fishing", 105: "Cooking", 106: "Farming",
+  107: "Crafting", 108: "Dodge", 110: "Ride",
+};
+
+const FLAG_PICKED_UP = 0x01;
+const FLAG_EQUIPPED = 0x02;
+const FLAG_QUALITY = 0x04;
+const FLAG_STACK = 0x08;
+const FLAG_VARIANT = 0x10;
+const FLAG_CRAFTER = 0x20;
+const FLAG_PREFAB = 0x40;
+const FLAG_CUSTOM = 0x80;
+
+const utf8 = { encode: s => new TextEncoder().encode(s), decode: b => new TextDecoder().decode(b) };
+
+function stableHash(s) {
+  let a = 5381, b = 5381;
+  for (let i = 0; i < s.length; i += 2) {
+    a = Math.imul(a, 33) ^ s.charCodeAt(i);
+    if (i === s.length - 1) break;
+    b = Math.imul(b, 33) ^ s.charCodeAt(i + 1);
+  }
+  return (a + Math.imul(b, 1566083941)) | 0;
+}
+
+ITEMS.sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]));
+const ITEM_BY_PREFAB = new Map(ITEMS.map(([prefab, name, type]) => [prefab, { prefab, name, type }]));
+const ITEM_BY_HASH = new Map(ITEMS.map(([prefab, name, type]) => [stableHash(prefab), { prefab, name, type }]));
+
+class Reader {
+  constructor(bytes) {
+    this.bytes = bytes;
+    this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    this.pos = 0;
+  }
+  u8() { return this.view.getUint8(this.pos++); }
+  u16() { const v = this.view.getUint16(this.pos, true); this.pos += 2; return v; }
+  i32() { const v = this.view.getInt32(this.pos, true); this.pos += 4; return v; }
+  f32() { const v = this.view.getFloat32(this.pos, true); this.pos += 4; return v; }
+  i64() { return this.take(8); }
+  bool() { return this.u8() !== 0; }
+  vec3() { return [this.f32(), this.f32(), this.f32()]; }
+  take(n) {
+    if (n < 0 || this.pos + n > this.bytes.length) throw new Error("Unexpected end of data");
+    const b = this.bytes.subarray(this.pos, this.pos + n);
+    this.pos += n;
+    return b;
+  }
+  bytesField() { return this.take(this.i32()); }
+  string() {
+    let n = 0, shift = 0, c;
+    do { c = this.u8(); n |= (c & 0x7f) << shift; shift += 7; } while (c & 0x80);
+    return utf8.decode(this.take(n));
+  }
+  numItems() {
+    const c = this.u8();
+    return c & 0x80 ? ((c & 0x7f) << 8) | this.u8() : c;
+  }
+  list(read) { return Array.from({ length: this.i32() }, read); }
+  atEnd() { return this.pos === this.bytes.length; }
+}
+
+class Writer {
+  constructor() { this.parts = []; }
+  raw(b) { this.parts.push(b); }
+  u8(v) { this.raw(Uint8Array.of(v)); }
+  u16(v) { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, v, true); this.raw(b); }
+  i32(v) { const b = new Uint8Array(4); new DataView(b.buffer).setInt32(0, v, true); this.raw(b); }
+  f32(v) { const b = new Uint8Array(4); new DataView(b.buffer).setFloat32(0, v, true); this.raw(b); }
+  vec3(v) { v.forEach(x => this.f32(x)); }
+  string(s) {
+    const body = utf8.encode(s), head = [];
+    let n = body.length;
+    do { head.push((n & 0x7f) | (n > 0x7f ? 0x80 : 0)); n >>>= 7; } while (n);
+    this.raw(Uint8Array.from(head));
+    this.raw(body);
+  }
+  numItems(n) { n < 0x80 ? this.u8(n) : this.raw(Uint8Array.of((n >> 8) | 0x80, n & 0xff)); }
+  bytesField(b) { this.i32(b.length); this.raw(b); }
+  toBytes() {
+    const out = new Uint8Array(this.parts.reduce((n, p) => n + p.length, 0));
+    let at = 0;
+    for (const p of this.parts) { out.set(p, at); at += p.length; }
+    return out;
+  }
+}
+
+function expect(what, actual, wanted) {
+  if (actual !== wanted) throw new Error(`Unsupported ${what} version ${actual}, expected ${wanted}`);
+}
+
+const readDict = r => r.list(() => [r.string(), r.f32()]);
+const readStrings = r => r.list(() => r.string());
+const readPairs = r => r.list(() => [r.string(), r.string()]);
+
+function readItem(r) {
+  const item = {
+    durability: r.i32(), x: r.u8(), y: r.u8(), worldLevel: r.u8(), flags: r.u8(),
+    quality: 1, stack: 1, variant: 0, crafter: null, hash: 0, custom: [],
+  };
+  if (item.flags & FLAG_QUALITY) item.quality = r.u16();
+  if (item.flags & FLAG_STACK) item.stack = r.u16();
+  if (item.flags & FLAG_VARIANT) item.variant = r.i32();
+  if (item.flags & FLAG_CRAFTER) item.crafter = { id: r.i64(), name: r.string() };
+  if (item.flags & FLAG_PREFAB) item.hash = r.i32();
+  if (item.flags & FLAG_CUSTOM) item.custom = Array.from({ length: r.numItems() }, () => [r.string(), r.string()]);
+  item.extra = r.u8();
+  return item;
+}
+
+function writeItem(w, item) {
+  const flags = (item.flags & ~(FLAG_QUALITY | FLAG_STACK))
+    | (item.quality !== 1 ? FLAG_QUALITY : 0)
+    | (item.stack !== 1 ? FLAG_STACK : 0);
+  w.i32(item.durability);
+  w.u8(item.x);
+  w.u8(item.y);
+  w.u8(item.worldLevel);
+  w.u8(flags);
+  if (flags & FLAG_QUALITY) w.u16(item.quality);
+  if (flags & FLAG_STACK) w.u16(item.stack);
+  if (flags & FLAG_VARIANT) w.i32(item.variant);
+  if (flags & FLAG_CRAFTER) { w.raw(item.crafter.id); w.string(item.crafter.name); }
+  if (flags & FLAG_PREFAB) w.i32(item.hash);
+  if (flags & FLAG_CUSTOM) {
+    w.numItems(item.custom.length);
+    for (const [k, v] of item.custom) { w.string(k); w.string(v); }
+  }
+  w.u8(item.extra);
+}
+
+function parseProfile(payload) {
+  const r = new Reader(payload);
+  expect("profile", r.i32(), PROFILE_VERSION);
+  const statCount = r.i32();
+  r.list(() => {
+    r.take(statCount * 4);
+    readDict(r); readDict(r); readDict(r);
+    r.list(() => readDict(r));
+    readDict(r); readDict(r); readDict(r); readDict(r); readDict(r);
+  });
+  r.bool();
+  r.list(() => {
+    r.i64();
+    r.bool(); r.vec3();
+    r.bool(); r.vec3();
+    r.bool(); r.vec3();
+    r.vec3();
+    if (r.bool()) r.bytesField();
+  });
+  const head = payload.subarray(0, r.pos);
+  const name = r.string();
+  const middleStart = r.pos;
+  r.i64(); r.string(); r.bool(); r.i64();
+  if (!r.bool()) throw new Error("Save has no player data");
+  const middle = payload.subarray(middleStart, r.pos);
+  const player = parsePlayer(r.bytesField());
+  if (!r.atEnd()) throw new Error("Unexpected bytes after profile");
+  return { head, name, middle, player };
+}
+
+function parsePlayer(blob) {
+  const r = new Reader(blob);
+  expect("player", r.i32(), PLAYER_VERSION);
+  r.f32(); r.f32(); r.f32(); r.f32(); r.string(); r.f32();
+  const head = blob.subarray(0, r.pos);
+  expect("inventory", r.i32(), INVENTORY_VERSION);
+  const items = Array.from({ length: r.u16() }, () => readItem(r));
+  const knownStart = r.pos;
+  readStrings(r);
+  r.list(() => { r.string(); r.i32(); });
+  readStrings(r); readStrings(r);
+  const uniques = readStrings(r);
+  readStrings(r); readStrings(r);
+  readPairs(r);
+  const known = blob.subarray(knownStart, r.pos);
+  const beard = r.string();
+  const hair = r.string();
+  const skin = r.vec3();
+  const hairColor = r.vec3();
+  const model = r.i32();
+  const foods = r.list(() => ({ name: r.string(), time: r.f32() }));
+  expect("skills", r.i32(), SKILLS_VERSION);
+  const skills = new Map(r.list(() => [r.i32(), { level: r.f32(), accumulator: r.f32() }]));
+  const tailStart = r.pos;
+  readPairs(r); r.f32(); r.f32(); r.f32(); r.bytesField();
+  if (!r.atEnd()) throw new Error("Unexpected bytes after player data");
+  const tail = blob.subarray(tailStart);
+  const rows = uniques.map(u => u.match(/^invrows (\d+)$/)).find(Boolean);
+  const height = rows ? Math.min(9, +rows[1]) : 4;
+  return { head, items, known, height, beard, hair, skin, hairColor, model, foods, skills, tail };
+}
+
+function writePlayer(p) {
+  const w = new Writer();
+  w.raw(p.head);
+  w.i32(INVENTORY_VERSION);
+  w.u16(p.items.length);
+  for (const item of p.items) writeItem(w, item);
+  w.raw(p.known);
+  w.string(p.beard);
+  w.string(p.hair);
+  w.vec3(p.skin);
+  w.vec3(p.hairColor);
+  w.i32(p.model);
+  w.i32(p.foods.length);
+  for (const food of p.foods) { w.string(food.name); w.f32(food.time); }
+  w.i32(SKILLS_VERSION);
+  w.i32(p.skills.size);
+  for (const [type, s] of p.skills) { w.i32(type); w.f32(s.level); w.f32(s.accumulator); }
+  w.raw(p.tail);
+  return w.toBytes();
+}
+
+function writeProfile(p) {
+  const w = new Writer();
+  w.raw(p.head);
+  w.string(p.name);
+  w.raw(p.middle);
+  w.bytesField(writePlayer(p.player));
+  return w.toBytes();
+}
+
+function readFile(bytes) {
+  return parseProfile(new Reader(bytes).bytesField());
+}
+
+async function writeFile(profile) {
+  const payload = writeProfile(profile);
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-512", payload));
+  const w = new Writer();
+  w.bytesField(payload);
+  w.bytesField(hash);
+  return w.toBytes();
+}
+
+const toHex = v => "#" + v.map(x => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, "0")).join("");
+const fromHex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+const $ = id => document.getElementById(id);
+const el = (tag, props = {}, ...children) => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+};
+
+let profile, fileName, selected = { x: 0, y: 0 };
+
+function fillLists() {
+  const option = ([prefab, name]) => el("option", { value: prefab, label: name });
+  $("itemList").replaceChildren(...ITEMS.map(option));
+  $("foodList").replaceChildren(...ITEMS.filter(i => i[2] === "Consumable").map(option));
+}
+
+function fillSelect(select, entries, value) {
+  const known = entries.some(([prefab]) => prefab === value);
+  const options = (known ? entries : [[value, value], ...entries])
+    .map(([prefab, name]) => el("option", { value: prefab, textContent: name === prefab ? name : `${name} (${prefab})` }));
+  select.replaceChildren(...options);
+  select.value = value;
+}
+
+function renderCharacter() {
+  const p = profile.player;
+  $("name").value = profile.name;
+  $("model").value = p.model;
+  fillSelect($("beard"), BEARDS, p.beard);
+  fillSelect($("hair"), HAIRS, p.hair);
+  $("skin").value = toHex(p.skin);
+  $("hairColor").value = toHex(p.hairColor);
+}
+
+function renderFoods() {
+  const foods = profile.player.foods;
+  const slots = Math.max(FOOD_SLOTS, foods.length);
+  $("foods").replaceChildren(...Array.from({ length: slots }, (_, i) => {
+    const food = foods[i];
+    const name = el("input", { value: food?.name ?? "", placeholder: "Nothing", ariaLabel: `Food ${i + 1}` });
+    name.setAttribute("list", "foodList");
+    const minutes = el("input", {
+      type: "number", min: 0, step: 1, ariaLabel: `Food ${i + 1} minutes`,
+      value: food ? Math.round(food.time / 60) : "", disabled: !food,
+    });
+    name.addEventListener("change", () => setFood(i, name.value.trim()));
+    minutes.addEventListener("input", () => {
+      if (Number.isFinite(minutes.valueAsNumber)) foods[i].time = Math.max(0, minutes.valueAsNumber) * 60;
+    });
+    return el("div", { className: "food" }, name, minutes);
+  }));
+}
+
+function setFood(index, prefab) {
+  const foods = profile.player.foods;
+  if (!prefab) foods.splice(index, 1);
+  else if (!ITEM_BY_PREFAB.has(prefab)) return renderFoods();
+  else if (foods[index]) foods[index].name = prefab;
+  else foods.push({ name: prefab, time: 30 * 60 });
+  renderFoods();
+}
+
+const itemAt = (x, y) => profile.player.items.find(i => i.x === x && i.y === y);
+
+function renderGrid() {
+  const cells = [];
+  for (let y = 0; y < profile.player.height; y++) {
+    for (let x = 0; x < GRID_WIDTH; x++) {
+      const item = itemAt(x, y);
+      const cell = el("button", { className: "cell" });
+      if (item) {
+        const known = ITEM_BY_HASH.get(item.hash);
+        cell.append(known?.name ?? "Unknown");
+        cell.title = known?.prefab ?? `Unknown item ${item.hash}`;
+        if (item.stack > 1) cell.append(el("span", { className: "stack", textContent: item.stack }));
+        if (item.flags & FLAG_EQUIPPED) cell.classList.add("equipped");
+      }
+      if (y === 0) cell.append(el("span", { className: "key", textContent: x + 1 }));
+      if (x === selected.x && y === selected.y) cell.classList.add("selected");
+      cell.addEventListener("click", () => { selected = { x, y }; renderInventory(); });
+      cells.push(cell);
+    }
+  }
+  $("grid").replaceChildren(...cells);
+}
+
+function renderItemEditor() {
+  const item = itemAt(selected.x, selected.y);
+  $("itemName").value = item ? ITEM_BY_HASH.get(item.hash)?.prefab ?? "" : "";
+  $("itemStack").value = item?.stack ?? "";
+  $("itemQuality").value = item?.quality ?? "";
+  $("itemDurability").value = item ? item.durability / 100 : "";
+  for (const id of ["itemStack", "itemQuality", "itemDurability", "itemRemove"]) $(id).disabled = !item;
+}
+
+function renderInventory() {
+  renderGrid();
+  renderItemEditor();
+}
+
+function setItem(prefab) {
+  const known = ITEM_BY_PREFAB.get(prefab);
+  if (!known) return renderItemEditor();
+  const item = itemAt(selected.x, selected.y);
+  if (item) {
+    item.hash = stableHash(prefab);
+    item.flags &= ~FLAG_EQUIPPED;
+  } else profile.player.items.push({
+    durability: 100 * 100, x: selected.x, y: selected.y, worldLevel: 0,
+    flags: FLAG_PICKED_UP | FLAG_PREFAB, quality: 1, stack: 1, variant: 0,
+    crafter: null, hash: stableHash(prefab), custom: [], extra: 0,
+  });
+  renderInventory();
+}
+
+function editItem(apply) {
+  const item = itemAt(selected.x, selected.y);
+  if (item) { apply(item); renderGrid(); }
+}
+
+function renderSkills() {
+  const skills = profile.player.skills;
+  $("skills").replaceChildren(...Object.entries(SKILLS).map(([type, label]) => {
+    const input = el("input", {
+      type: "number", min: 0, max: 100, step: 1, id: `skill${type}`,
+      value: Math.floor(skills.get(+type)?.level ?? 0),
+    });
+    input.addEventListener("input", () => setSkill(+type, input.valueAsNumber));
+    return el("div", { className: "row" }, el("label", { htmlFor: input.id, textContent: label }), input);
+  }));
+}
+
+function setSkill(type, level) {
+  if (!Number.isFinite(level)) return;
+  const skills = profile.player.skills;
+  const skill = skills.get(type) ?? { level: 0, accumulator: 0 };
+  skills.set(type, { ...skill, level: clamp(level, 0, 100) });
+}
+
+function render() {
+  renderCharacter();
+  renderFoods();
+  renderInventory();
+  renderSkills();
+}
+
+fillLists();
+
+$("open").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    profile = readFile(new Uint8Array(await file.arrayBuffer()));
+    fileName = file.name;
+    selected = { x: 0, y: 0 };
+    render();
+    $("editor").hidden = false;
+    $("save").disabled = false;
+    $("status").textContent = `Loaded ${fileName}`;
+  } catch (err) {
+    $("editor").hidden = true;
+    $("save").disabled = true;
+    $("status").textContent = `Could not read ${file.name}: ${err.message}`;
+  }
+  e.target.value = "";
+});
+
+$("name").addEventListener("input", e => profile.name = e.target.value);
+$("model").addEventListener("change", e => profile.player.model = +e.target.value);
+$("beard").addEventListener("change", e => profile.player.beard = e.target.value);
+$("hair").addEventListener("change", e => profile.player.hair = e.target.value);
+$("skin").addEventListener("input", e => profile.player.skin = fromHex(e.target.value));
+$("hairColor").addEventListener("input", e => profile.player.hairColor = fromHex(e.target.value));
+
+$("itemName").addEventListener("change", e => setItem(e.target.value.trim()));
+$("itemStack").addEventListener("input", e => {
+  const v = e.target.valueAsNumber;
+  if (Number.isFinite(v)) editItem(item => item.stack = clamp(Math.round(v), 1, 65535));
+});
+$("itemQuality").addEventListener("input", e => {
+  const v = e.target.valueAsNumber;
+  if (Number.isFinite(v)) editItem(item => item.quality = clamp(Math.round(v), 1, 65535));
+});
+$("itemDurability").addEventListener("input", e => {
+  const v = e.target.valueAsNumber;
+  if (Number.isFinite(v)) editItem(item => item.durability = clamp(Math.round(v * 100), 0, 2 ** 31 - 1));
+});
+$("itemRemove").addEventListener("click", () => {
+  const items = profile.player.items;
+  items.splice(items.indexOf(itemAt(selected.x, selected.y)), 1);
+  renderInventory();
+});
+
+function setAllSkills(level) {
+  for (const type of Object.keys(SKILLS)) {
+    setSkill(+type, level);
+    $(`skill${type}`).value = level;
+  }
+}
+
+$("minAll").addEventListener("click", () => setAllSkills(0));
+$("maxAll").addEventListener("click", () => setAllSkills(100));
+
+$("save").addEventListener("click", async () => {
+  const bytes = await writeFile(profile);
+  const a = el("a", { href: URL.createObjectURL(new Blob([bytes])), download: fileName });
+  a.click();
+  URL.revokeObjectURL(a.href);
+  $("status").textContent = `Saved ${fileName} to your downloads. Replace the original with it while the game is closed.`;
+});
+</script>
+</body>
+</html>
