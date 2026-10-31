@@ -4,7 +4,7 @@ A character editor for Valheim that runs entirely in your browser.
 
 **Open Breyta: [https://breyta.pages.dev](https://breyta.pages.dev)**
 
-*Breyta* is Old Norse for "to change".
+_Breyta_ is Old Norse for "to change".
 
 ![Breyta with a character loaded](docs/editor.png)
 
@@ -38,7 +38,14 @@ Characters stored in Steam Cloud can overwrite local edits when the game syncs.
 
 ## Compatibility
 
-Breyta reads one version of the save format: profile 46, player 33, inventory 109, skills 2. A save in any other version is rejected rather than modified.
+Breyta reads two versions of the save format:
+
+| Profile | Player | Inventory | Skills |
+| ------- | ------ | --------- | ------ |
+| 46      | 33     | 109       | 2      |
+| 47      | 34     | 110       | 2      |
+
+A save in any other version is rejected rather than modified.
 
 ## Run locally
 
