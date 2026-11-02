@@ -23,7 +23,7 @@ Your save is read and written in the browser. Nothing is uploaded: once loaded, 
 
 1. Close Valheim.
 2. Back up your character file.
-3. Open Breyta and choose your `.fch` file.
+3. Open Breyta and drop your `.fch` file into the box, or select **Open save** to choose it.
 4. Make your changes and select **Save changes**.
 5. Replace the original file with the downloaded one.
 
