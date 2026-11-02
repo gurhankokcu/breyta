@@ -48,9 +48,21 @@
         align-items: center;
       }
       header {
+        width: 100%;
+        padding: 32px 24px 28px;
+        border-bottom: 1px solid var(--grain);
         text-align: center;
-        padding: 64px 24px 40px;
-        max-width: 640px;
+      }
+      .rune {
+        display: block;
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 8px;
+        fill: none;
+        stroke: var(--ember);
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       h1 {
         margin: 0;
@@ -64,9 +76,71 @@
         color: var(--ash);
         font-style: italic;
       }
-      .lede {
-        margin: 20px 0 28px;
+      .page {
+        flex: 1;
+        display: grid;
+        grid-template-rows: 1fr auto 1fr;
+        justify-items: center;
+        padding: 48px 24px;
         color: var(--ash);
+        text-align: center;
+      }
+      .page[hidden] {
+        display: none;
+      }
+      .message {
+        align-self: end;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .page p {
+        margin: 0 0 6px;
+      }
+      .page .actions {
+        margin-top: 20px;
+      }
+      .page b {
+        margin-bottom: 4px;
+        color: var(--parchment);
+        font: 400 22px/1.3 var(--serif);
+      }
+      .page svg {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 12px;
+        color: var(--blood);
+      }
+      .line {
+        grid-column: 1 / -1;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 24px 0;
+        margin-bottom: -24px;
+        background: var(--char);
+      }
+      .line svg {
+        display: none;
+        flex: none;
+        width: 20px;
+        height: 20px;
+        color: var(--ember);
+      }
+      .line.loaded .icon-file,
+      .line.saved .icon-check,
+      .line.error .icon-alert {
+        display: block;
+      }
+      .line.error svg {
+        color: var(--blood);
+      }
+      #status {
+        flex: 1;
+        margin: 0;
       }
       h2 {
         margin: 0 0 20px;
@@ -87,14 +161,24 @@
         min-width: 148px;
         font: 500 15px/1.2 var(--sans);
         cursor: pointer;
+        transition: background-color 0.15s;
+      }
+      button:not(.cell):hover:not(:disabled) {
+        background: color-mix(in srgb, var(--ember) 14%, transparent);
       }
       .primary {
         background: var(--ember);
         color: var(--char);
       }
+      .primary:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--ember), var(--parchment) 20%);
+      }
       .danger {
         border-color: var(--blood);
         color: var(--blood);
+      }
+      .danger:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--blood) 14%, transparent);
       }
       button:disabled {
         opacity: 0.35;
@@ -104,14 +188,11 @@
         outline: 2px solid var(--ember);
         outline-offset: 2px;
       }
-      #status {
-        margin: 20px 0 0;
-        color: var(--ash);
-        min-height: 1.5em;
-      }
       main {
+        flex: 1;
         display: grid;
         grid-template-columns: 1fr 1fr;
+        align-content: start;
         gap: 24px;
         padding: 0 24px 48px;
         width: min(920px, 100%);
@@ -124,15 +205,25 @@
         border: 1px solid var(--grain);
         border-radius: 8px;
         padding: 28px;
+        position: relative;
+      }
+      section::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--ember), transparent);
+        opacity: 0.55;
       }
       .wide {
         grid-column: 1 / -1;
       }
       .row {
         display: grid;
-        grid-template-columns: 1fr 1.4fr;
+        grid-template-columns: 1fr 2fr;
         align-items: center;
         gap: 16px;
+        min-height: 36px;
         margin-bottom: 12px;
       }
       label {
@@ -147,6 +238,39 @@
         border-radius: 4px;
         padding: 8px 10px;
         font: 15px/1.2 var(--sans);
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      input:hover:not(:disabled),
+      select:hover {
+        border-color: color-mix(in srgb, var(--grain), var(--ash) 35%);
+      }
+      input:focus-visible,
+      select:focus-visible {
+        outline: none;
+        border-color: var(--ember);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ember) 20%, transparent);
+      }
+      select,
+      input[list] {
+        background-image:
+          linear-gradient(45deg, transparent 50%, var(--ash) 50%),
+          linear-gradient(135deg, var(--ash) 50%, transparent 50%);
+        background-position:
+          calc(100% - 19px) 50%,
+          calc(100% - 14px) 50%;
+        background-size: 5px 5px;
+        background-repeat: no-repeat;
+      }
+      select {
+        appearance: none;
+        padding-right: 38px;
+        cursor: pointer;
+      }
+      input[list]::-webkit-calendar-picker-indicator {
+        opacity: 0;
+        cursor: pointer;
       }
       input::placeholder {
         color: var(--ash);
@@ -160,9 +284,28 @@
         height: 36px;
         cursor: pointer;
       }
+      input[type="checkbox"] {
+        appearance: none;
+        justify-self: start;
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        padding: 0;
+        cursor: pointer;
+      }
+      input[type="checkbox"]:checked {
+        background: var(--ember);
+        box-shadow: inset 0 0 0 3px var(--char);
+      }
       input[type="number"] {
+        appearance: textfield;
         text-align: right;
         font-variant-numeric: tabular-nums;
+      }
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        appearance: none;
+        margin: 0;
       }
       .center {
         display: flex;
@@ -170,11 +313,20 @@
         justify-content: center;
         margin-top: 20px;
       }
+      .foods {
+        margin-top: 8px;
+        padding-top: 20px;
+        border-top: 1px solid var(--grain);
+      }
       .food {
         display: grid;
-        grid-template-columns: 1fr 96px;
+        grid-template-columns: 1fr 80px;
         gap: 12px;
         margin-bottom: 12px;
+      }
+      section > .row:last-child,
+      .food:last-child {
+        margin-bottom: 0;
       }
       .food-head {
         color: var(--ash);
@@ -212,9 +364,12 @@
       .cell.equipped {
         background: var(--equipped);
       }
+      .cell:hover {
+        border-color: color-mix(in srgb, var(--grain), var(--ash) 35%);
+      }
       .cell.selected {
         border-color: var(--ember);
-        box-shadow: 0 0 0 1px var(--ember);
+        box-shadow: 0 0 0 2px var(--ember);
       }
       .cell .key {
         position: absolute;
@@ -233,9 +388,14 @@
       }
       .item-editor {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 96px 96px 96px auto;
+        align-items: end;
         gap: 16px;
         margin-top: 28px;
+      }
+      .item-editor button {
+        min-width: 0;
+        padding-block: 8px;
       }
       .item-editor label {
         display: block;
@@ -244,28 +404,50 @@
       }
       .skills {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        column-gap: 56px;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(8, auto);
+        grid-auto-flow: column;
+        column-gap: 40px;
       }
       .skills .row {
         grid-template-columns: 1fr 88px;
+        row-gap: 6px;
+      }
+      .skills .row::after {
+        content: "";
+        grid-column: 1 / -1;
+        height: 2px;
+        border-radius: 1px;
+        background: linear-gradient(90deg, var(--ember) calc(var(--level) * 1%), var(--grain) 0);
       }
       footer {
-        max-width: 60ch;
-        padding: 8px 24px 56px;
+        width: 100%;
+        padding: 24px 24px 28px;
+        border-top: 1px solid var(--grain);
         text-align: center;
         color: var(--ash);
         font-size: 13px;
       }
       footer p {
-        margin: 0 0 8px;
+        max-width: 60ch;
+        margin: 0 auto 8px;
+      }
+      footer p:last-child {
+        max-width: none;
+        margin-bottom: 0;
       }
       footer a {
         color: inherit;
       }
       @media (max-width: 720px) {
         header {
-          padding-top: 40px;
+          padding-top: 24px;
+        }
+        .line {
+          flex-wrap: wrap;
+        }
+        .line .actions {
+          width: 100%;
         }
         h1 {
           font-size: 34px;
@@ -287,33 +469,72 @@
         .item-editor {
           grid-template-columns: 1fr 1fr 1fr;
         }
-        .item-editor > :first-child {
+        .item-editor > :first-child,
+        .item-editor > :last-child {
           grid-column: 1 / -1;
+        }
+        .item-editor > :last-child {
+          justify-self: center;
         }
         .skills {
           grid-template-columns: 1fr;
+          grid-template-rows: none;
+          grid-auto-flow: row;
         }
       }
     </style>
   </head>
   <body>
     <header>
+      <svg class="rune" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M24 10V54M24 10L42 21L24 32L42 43L24 54" />
+      </svg>
       <h1>Breyta<small>Character editor for Valheim</small></h1>
-      <p class="lede">
-        Change your Viking's looks, skills, food and inventory. Your save is read and written in this browser and never
-        uploaded.
-      </p>
-      <div class="actions">
-        <button id="open">Open save</button>
-        <button id="save" class="primary" disabled>Save changes</button>
-      </div>
-      <input id="file" type="file" accept=".fch" hidden />
-      <p id="status" role="status">
-        Choose a .fch file from your Valheim characters folder. Keep a copy of the original.
-      </p>
     </header>
 
+    <input id="file" type="file" accept=".fch" hidden />
+
+    <div id="landing" class="page">
+      <div class="message">
+        <p>Change your Viking's looks, skills, food and inventory.</p>
+        <p>Your save is read and written in this browser and never uploaded.</p>
+        <p>Choose a .fch file from your Valheim characters folder. Keep a copy of the original.</p>
+      </div>
+      <div class="actions"><button class="open primary">Open save</button></div>
+    </div>
+
+    <div id="rejected" class="page" role="alert" hidden>
+      <div class="message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3.5 2.5 20h19z" />
+          <path d="M12 10v4.5M12 17.2v.1" />
+        </svg>
+        <b id="rejectedTitle"></b>
+        <p id="rejectedReason"></p>
+      </div>
+      <div class="actions"><button class="open primary">Open save</button></div>
+    </div>
+
     <main id="editor" hidden>
+      <div id="line" class="line">
+        <svg class="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+          <path d="M14 3v5h5" />
+        </svg>
+        <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+        <svg class="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3.5 2.5 20h19z" />
+          <path d="M12 10v4.5M12 17.2v.1" />
+        </svg>
+        <p id="status" role="status"></p>
+        <div class="actions">
+          <button id="close">Close</button>
+          <button id="save" class="primary">Save changes</button>
+        </div>
+      </div>
+
       <section>
         <h2>Character</h2>
         <div class="row"><label for="name">Name</label><input id="name" /></div>
@@ -324,22 +545,29 @@
             <option value="1">Female</option>
           </select>
         </div>
-        <div class="row">
-          <label for="beard">Beard</label
-          ><select id="beard"></select>
-        </div>
+        <div class="row"><label for="skin">Skin colour</label><input id="skin" type="color" /></div>
         <div class="row">
           <label for="hair">Hair</label
           ><select id="hair"></select>
         </div>
-        <div class="row"><label for="skin">Skin colour</label><input id="skin" type="color" /></div>
+        <div class="row">
+          <label for="beard">Beard</label
+          ><select id="beard"></select>
+        </div>
         <div class="row"><label for="hairColor">Hair colour</label><input id="hairColor" type="color" /></div>
       </section>
 
       <section>
-        <h2>Food</h2>
-        <div class="food food-head"><span>Eaten</span><span>Minutes left</span></div>
-        <div id="foods"></div>
+        <h2>Status</h2>
+        <div class="row">
+          <label for="power">Forsaken power</label
+          ><select id="power"></select>
+        </div>
+        <div class="row"><label for="cheater">Cheater</label><input id="cheater" type="checkbox" /></div>
+        <div class="foods">
+          <div class="food food-head"><span>Food</span><span>Minutes left</span></div>
+          <div id="foods"></div>
+        </div>
       </section>
 
       <section class="wide">
@@ -357,8 +585,8 @@
           <div>
             <label for="itemDurability">Durability</label><input id="itemDurability" type="number" min="0" step="any" />
           </div>
+          <button id="itemRemove" class="danger">Remove</button>
         </div>
-        <div class="center"><button id="itemRemove" class="danger">Remove item</button></div>
       </section>
 
       <section class="wide">
@@ -446,6 +674,13 @@
       ITEMS.sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]));
       const ITEM_BY_PREFAB = new Map(ITEMS.map(([prefab, name, type]) => [prefab, { prefab, name, type }]));
       const ITEM_BY_HASH = new Map(ITEMS.map(([prefab, name, type]) => [stableHash(prefab), { prefab, name, type }]));
+      const labelOf = (prefab, name) => (prefab && prefab !== name ? `${name} (${prefab})` : name);
+      const labelFor = (prefab) => {
+        const item = ITEM_BY_PREFAB.get(prefab);
+        return item ? labelOf(prefab, item.name) : prefab;
+      };
+      const PREFAB_BY_LABEL = new Map(ITEMS.map(([prefab, name]) => [labelOf(prefab, name), prefab]));
+      const prefabOf = (label) => PREFAB_BY_LABEL.get(label) ?? label;
 
       class Reader {
         constructor(bytes) {
@@ -538,6 +773,9 @@
           const b = new Uint8Array(4);
           new DataView(b.buffer).setFloat32(0, v, true);
           this.raw(b);
+        }
+        bool(v) {
+          this.u8(v ? 1 : 0);
         }
         vec3(v) {
           v.forEach((x) => this.f32(x));
@@ -701,17 +939,19 @@
         const middleStart = r.pos;
         r.i64();
         r.string();
-        r.bool();
+        const middle = payload.subarray(middleStart, r.pos);
+        const cheater = r.bool();
+        const restStart = r.pos;
         r.i64();
         if (!r.bool()) {
           throw new Error("Save has no player data");
         }
-        const middle = payload.subarray(middleStart, r.pos);
+        const rest = payload.subarray(restStart, r.pos);
         const player = parsePlayer(r.bytesField(), format);
         if (!r.atEnd()) {
           throw new Error("Unexpected bytes after profile");
         }
-        return { version, head, name, middle, player };
+        return { version, head, name, middle, cheater, rest, player };
       }
 
       function parsePlayer(blob, format) {
@@ -721,9 +961,9 @@
         r.f32();
         r.f32();
         r.f32();
-        r.string();
-        r.f32();
         const head = blob.subarray(0, r.pos);
+        const power = r.string();
+        const cooldown = r.f32();
         expect("inventory", r.i32(), format.inventory);
         const items = Array.from({ length: r.u16() }, () => readItem(r));
         const knownStart = r.pos;
@@ -762,12 +1002,30 @@
         const tail = blob.subarray(tailStart);
         const rows = uniques.map((u) => u.match(/^invrows (\d+)$/)).find(Boolean);
         const height = rows ? Math.min(9, +rows[1]) : 4;
-        return { head, format, items, known, height, beard, hair, skin, hairColor, model, foods, skills, tail };
+        return {
+          head,
+          format,
+          power,
+          cooldown,
+          items,
+          known,
+          height,
+          beard,
+          hair,
+          skin,
+          hairColor,
+          model,
+          foods,
+          skills,
+          tail,
+        };
       }
 
       function writePlayer(p) {
         const w = new Writer();
         w.raw(p.head);
+        w.string(p.power);
+        w.f32(p.cooldown);
         w.i32(p.format.inventory);
         w.u16(p.items.length);
         for (const item of p.items) {
@@ -800,6 +1058,8 @@
         w.raw(p.head);
         w.string(p.name);
         w.raw(p.middle);
+        w.bool(p.cheater);
+        w.raw(p.rest);
         w.bytesField(writePlayer(p.player));
         return w.toBytes();
       }
@@ -838,18 +1098,20 @@
 
       let profile,
         fileName,
+        statusTimer,
         selected = { x: 0, y: 0 };
 
       function fillLists() {
-        const option = ([prefab, name]) => el("option", { value: prefab, label: name });
+        const option = ([prefab, name]) => el("option", { value: labelOf(prefab, name) });
         $("itemList").replaceChildren(...ITEMS.map(option));
-        $("foodList").replaceChildren(...ITEMS.filter((i) => i[2] === "Consumable").map(option));
+        $("foodList").replaceChildren(...ITEMS.filter(([, , type]) => type === "Consumable").map(option));
       }
 
       function fillSelect(select, entries, value) {
         const known = entries.some(([prefab]) => prefab === value);
-        const options = (known ? entries : [[value, value], ...entries]).map(([prefab, name]) =>
-          el("option", { value: prefab, textContent: name === prefab ? name : `${name} (${prefab})` }),
+        const all = known ? entries : [[value, value || "None"], ...entries];
+        const options = all.map(([prefab, name]) =>
+          el("option", { value: prefab, textContent: labelOf(prefab, name) }),
         );
         select.replaceChildren(...options);
         select.value = value;
@@ -859,10 +1121,12 @@
         const p = profile.player;
         $("name").value = profile.name;
         $("model").value = p.model;
-        fillSelect($("beard"), BEARDS, p.beard);
-        fillSelect($("hair"), HAIRS, p.hair);
         $("skin").value = toHex(p.skin);
+        fillSelect($("hair"), HAIRS, p.hair);
+        fillSelect($("beard"), BEARDS, p.beard);
         $("hairColor").value = toHex(p.hairColor);
+        fillSelect($("power"), POWERS, p.power);
+        $("cheater").checked = profile.cheater;
       }
 
       function renderFoods() {
@@ -871,7 +1135,11 @@
         $("foods").replaceChildren(
           ...Array.from({ length: slots }, (_, i) => {
             const food = foods[i];
-            const name = el("input", { value: food?.name ?? "", placeholder: "Nothing", ariaLabel: `Food ${i + 1}` });
+            const name = el("input", {
+              value: food ? labelFor(food.name) : "",
+              placeholder: "Nothing",
+              ariaLabel: `Food ${i + 1}`,
+            });
             name.setAttribute("list", "foodList");
             const minutes = el("input", {
               type: "number",
@@ -881,7 +1149,7 @@
               value: food ? Math.round(food.time / 60) : "",
               disabled: !food,
             });
-            name.addEventListener("change", () => setFood(i, name.value.trim()));
+            name.addEventListener("change", () => setFood(i, prefabOf(name.value.trim())));
             minutes.addEventListener("input", () => {
               if (Number.isFinite(minutes.valueAsNumber)) {
                 foods[i].time = Math.max(0, minutes.valueAsNumber) * 60;
@@ -945,7 +1213,7 @@
 
       function renderItemEditor() {
         const item = itemAt(selected.x, selected.y);
-        $("itemName").value = item ? (ITEM_BY_HASH.get(item.hash)?.prefab ?? "") : "";
+        $("itemName").value = item ? labelFor(ITEM_BY_HASH.get(item.hash)?.prefab ?? "") : "";
         $("itemStack").value = item?.stack ?? "";
         $("itemQuality").value = item?.quality ?? "";
         $("itemDurability").value = item ? item.durability / 100 : "";
@@ -998,18 +1266,22 @@
       function renderSkills() {
         const skills = profile.player.skills;
         $("skills").replaceChildren(
-          ...Object.entries(SKILLS).map(([type, label]) => {
-            const input = el("input", {
-              type: "number",
-              min: 0,
-              max: 100,
-              step: 1,
-              id: `skill${type}`,
-              value: Math.floor(skills.get(+type)?.level ?? 0),
-            });
-            input.addEventListener("input", () => setSkill(+type, input.valueAsNumber));
-            return el("div", { className: "row" }, el("label", { htmlFor: input.id, textContent: label }), input);
-          }),
+          ...Object.entries(SKILLS)
+            .sort(([, a], [, b]) => a.localeCompare(b))
+            .map(([type, label]) => {
+              const input = el("input", {
+                type: "number",
+                min: 0,
+                max: 100,
+                step: 1,
+                id: `skill${type}`,
+                value: Math.floor(skills.get(+type)?.level ?? 0),
+              });
+              input.addEventListener("input", () => setSkill(+type, input.valueAsNumber));
+              const row = el("div", { className: "row" }, el("label", { htmlFor: input.id, textContent: label }), input);
+              row.style.setProperty("--level", input.value);
+              return row;
+            }),
         );
       }
 
@@ -1019,7 +1291,9 @@
         }
         const skills = profile.player.skills;
         const skill = skills.get(type) ?? { level: 0, accumulator: 0 };
-        skills.set(type, { ...skill, level: clamp(level, 0, 100) });
+        const value = clamp(level, 0, 100);
+        skills.set(type, { ...skill, level: value });
+        $(`skill${type}`).parentElement.style.setProperty("--level", value);
       }
 
       function render() {
@@ -1029,9 +1303,18 @@
         renderSkills();
       }
 
+      function setStatus(text, state) {
+        clearTimeout(statusTimer);
+        $("status").textContent = text;
+        $("line").className = `line ${state}`;
+      }
+
       fillLists();
 
-      $("open").addEventListener("click", () => $("file").click());
+      for (const button of document.querySelectorAll(".open")) {
+        button.addEventListener("click", () => $("file").click());
+      }
+      $("close").addEventListener("click", () => location.reload());
 
       $("file").addEventListener("change", async (e) => {
         const file = e.target.files[0];
@@ -1043,25 +1326,29 @@
           fileName = file.name;
           selected = { x: 0, y: 0 };
           render();
+          setStatus(`Loaded ${fileName}`, "loaded");
+          $("landing").hidden = true;
+          $("rejected").hidden = true;
           $("editor").hidden = false;
-          $("save").disabled = false;
-          $("status").textContent = `Loaded ${fileName} · save version ${profile.version}`;
         } catch (err) {
-          $("editor").hidden = true;
-          $("save").disabled = true;
-          $("status").textContent = `Could not read ${file.name}: ${err.message}`;
+          $("rejectedTitle").textContent = `Could not read ${file.name}`;
+          $("rejectedReason").textContent = `${err.message}.`;
+          $("landing").hidden = true;
+          $("rejected").hidden = false;
         }
         e.target.value = "";
       });
 
       $("name").addEventListener("input", (e) => (profile.name = e.target.value));
       $("model").addEventListener("change", (e) => (profile.player.model = +e.target.value));
-      $("beard").addEventListener("change", (e) => (profile.player.beard = e.target.value));
-      $("hair").addEventListener("change", (e) => (profile.player.hair = e.target.value));
       $("skin").addEventListener("input", (e) => (profile.player.skin = fromHex(e.target.value)));
+      $("hair").addEventListener("change", (e) => (profile.player.hair = e.target.value));
+      $("beard").addEventListener("change", (e) => (profile.player.beard = e.target.value));
       $("hairColor").addEventListener("input", (e) => (profile.player.hairColor = fromHex(e.target.value)));
+      $("power").addEventListener("change", (e) => (profile.player.power = e.target.value));
+      $("cheater").addEventListener("change", (e) => (profile.cheater = e.target.checked));
 
-      $("itemName").addEventListener("change", (e) => setItem(e.target.value.trim()));
+      $("itemName").addEventListener("change", (e) => setItem(prefabOf(e.target.value.trim())));
       $("itemStack").addEventListener("input", (e) => {
         const v = e.target.valueAsNumber;
         if (Number.isFinite(v)) {
@@ -1102,10 +1389,14 @@
           const a = el("a", { href: URL.createObjectURL(new Blob([bytes])), download: fileName });
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href));
-          $("status").textContent =
-            `Saved ${fileName} to your downloads. Replace the original with it while the game is closed.`;
+          setStatus(`Saved ${fileName} to your downloads`, "saved");
+          $("close").disabled = $("save").disabled = true;
+          statusTimer = setTimeout(() => {
+            $("close").disabled = $("save").disabled = false;
+            setStatus(`Loaded ${fileName}`, "loaded");
+          }, 3000);
         } catch (err) {
-          $("status").textContent = `Could not save ${fileName}: ${err.message}`;
+          setStatus(`Could not save ${fileName}: ${err.message}`, "error");
         }
       });
     </script>

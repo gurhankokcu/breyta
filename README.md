@@ -10,8 +10,8 @@ _Breyta_ is Old Norse for "to change".
 
 ## Features
 
-- **Character**: name, body, beard, hair, skin colour and hair colour
-- **Food**: what you have eaten and how many minutes each lasts
+- **Character**: name, body, skin colour, hair, beard and hair colour
+- **Status**: Forsaken power, cheater flag, and food with minutes left
 - **Inventory**: add, remove and replace items, and set stack, quality and durability
 - **Skills**: set any skill from 0 to 100, one at a time or all at once
 
@@ -59,7 +59,7 @@ Then open `http://localhost:8000`.
 
 ## Credits
 
-Item, beard and hair names come from the [Jotunn item list](https://valheim-modding.github.io/Jotunn/data/objects/item-list.html), MIT License, © 2021 JotunnLib Team.
+Item, hair and beard names come from the [Jotunn item list](https://valheim-modding.github.io/Jotunn/data/objects/item-list.html), MIT License, © 2021 JotunnLib Team.
 
 ## Disclaimer
 
